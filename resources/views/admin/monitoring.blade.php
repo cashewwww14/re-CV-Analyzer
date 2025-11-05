@@ -71,17 +71,19 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white rounded-xl shadow-md p-6">
                     <h3 class="text-gray-500 text-sm font-semibold mb-2">Today's Analysis</h3>
-                    <p class="text-3xl font-bold text-gray-800">0</p>
-                    <p class="text-green-600 text-sm mt-2">↑ 0% from yesterday</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ $todayAnalysis }}</p>
+                    <p class="{{ $percentageChange >= 0 ? 'text-green-600' : 'text-red-600' }} text-sm mt-2">
+                        {{ $percentageChange >= 0 ? '↑' : '↓' }} {{ abs($percentageChange) }}% from yesterday
+                    </p>
                 </div>
                 <div class="bg-white rounded-xl shadow-md p-6">
                     <h3 class="text-gray-500 text-sm font-semibold mb-2">Active Users</h3>
-                    <p class="text-3xl font-bold text-gray-800">0</p>
-                    <p class="text-blue-600 text-sm mt-2">Online now</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ $activeUsers }}</p>
+                    <p class="text-blue-600 text-sm mt-2">Last 24 hours</p>
                 </div>
                 <div class="bg-white rounded-xl shadow-md p-6">
                     <h3 class="text-gray-500 text-sm font-semibold mb-2">API Response Time</h3>
-                    <p class="text-3xl font-bold text-gray-800">0ms</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ $avgResponseTime }}ms</p>
                     <p class="text-gray-500 text-sm mt-2">Average response time</p>
                 </div>
             </div>
@@ -89,7 +91,7 @@
             <!-- Recent Activity Log -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Activity Log</h3>
-                <div class="space-y-4">
+                @if($activityLog->isEmpty())
                     <div class="text-center py-12 text-gray-500">
                         <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -97,7 +99,51 @@
                         <p class="text-lg">No activity recorded</p>
                         <p class="text-sm mt-2">Activity will appear here when users analyze CVs</p>
                     </div>
-                </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Time</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Job Position</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                @foreach($activityLog as $log)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 text-sm text-gray-600">
+                                            {{ $log->created_at->format('H:i:s') }}<br>
+                                            <span class="text-xs text-gray-400">{{ $log->created_at->format('M d, Y') }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm font-medium text-gray-800">
+                                            {{ $log->user->name }}
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">
+                                            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-semibold">
+                                                CV Analysis
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">
+                                            @if($log->jobMatches->isNotEmpty() && $log->jobMatches->first()->jobDescription)
+                                                {{ $log->jobMatches->first()->jobDescription->job_title }}
+                                            @else
+                                                General
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">
+                                                {{ ucfirst($log->status) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </main>
     </div>

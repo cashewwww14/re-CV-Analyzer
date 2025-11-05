@@ -45,6 +45,12 @@
                         </svg>
                         <span>Analysis History</span>
                     </a>
+                    <a href="{{ route('profile.show') }}" class="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 px-4 py-3 rounded-lg font-semibold transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span>My Profile</span>
+                    </a>
                 </nav>
             </div>
         </aside>
@@ -138,8 +144,8 @@
                 <h3 class="text-xl font-bold text-orange-800 mb-4">🎯 Missing Key Skills</h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                     @foreach($analysis['missing_skills'] as $skill)
-                        <div class="bg-orange-100 px-3 py-2 rounded-lg text-center">
-                            <span class="text-orange-800 font-medium">{{ $skill }}</span>
+                        <div class="bg-orange-100 px-4 py-3 rounded-lg flex items-center justify-center min-h-[60px]">
+                            <p class="text-orange-800 font-medium text-center">{{ $skill }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -232,13 +238,37 @@
             </div>
             @endif
 
-            <!-- User Notes -->
-            @if(!empty($cvAnalysis->user_notes))
+            <!-- User Feedback Section -->
             <div class="bg-white rounded-xl shadow-md p-6 mt-8">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">📝 Your Notes</h3>
-                <p class="text-gray-700 whitespace-pre-line">{{ $cvAnalysis->user_notes }}</p>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">💬 User Feedback</h3>
+                
+                @if(!empty($cvAnalysis->user_notes))
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-2">Your Saved Notes:</h4>
+                        <p class="text-gray-700 whitespace-pre-line">{{ $cvAnalysis->user_notes }}</p>
+                    </div>
+                @else
+                    <p class="text-gray-500 italic mb-4">No feedback saved yet.</p>
+                @endif
+
+                <!-- Action Buttons (Always visible) -->
+                <div class="flex flex-wrap gap-3 mt-4">
+                    @if($cvAnalysis->cv_file_path)
+                    <a href="{{ Storage::url($cvAnalysis->cv_file_path) }}" target="_blank" class="inline-flex items-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        View CV
+                    </a>
+                    @endif
+                    <button onclick="window.print()" class="inline-flex items-center bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                        Print Analysis
+                    </button>
+                </div>
             </div>
-            @endif
 
             <!-- Action Buttons -->
             <div class="flex justify-center space-x-4 mt-12">

@@ -94,6 +94,8 @@ class AuthController extends Controller
             ],
         ], [
             'name.unique' => 'Username telah digunakan',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Email harus menggunakan format yang valid (contoh: user@example.com)',
             'email.unique' => 'Email telah digunakan',
             'password.mixed_case' => 'Password harus mengandung huruf besar dan kecil',
             'password.numbers' => 'Password harus mengandung angka'

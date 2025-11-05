@@ -24,7 +24,11 @@ class CVAnalyzerController extends Controller
 
     public function index()
     {
-        return view('cv-analyzer');
+        $jobTitles = \App\Models\JobDescription::where('status', 'active')
+            ->orderBy('job_title')
+            ->get(['id', 'job_title', 'department']);
+        
+        return view('cv-analyzer', compact('jobTitles'));
     }
 
     public function showDetail($id)
@@ -60,8 +64,22 @@ class CVAnalyzerController extends Controller
     public function analyze(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'cv_file' => 'required|file|mimes:pdf|max:10240',
-            'job_requirements' => 'required|string|min:50|max:5000'
+            'cv_file' => 'required|file|mimes:pdf|mimetypes:application/pdf|max:1024',
+            'job_title' => 'required_without:new_job_title|string|max:255',
+            'new_job_title' => 'required_without:job_title|string|max:255',
+            'new_job_description' => 'required_with:new_job_title|string|max:5000',
+            'job_requirements' => 'nullable|string|max:3000'
+        ], [
+            'cv_file.required' => 'Please upload your CV (PDF format)',
+            'cv_file.mimes' => 'CV must be in PDF format',
+            'cv_file.mimetypes' => 'Invalid file format. Only PDF files are allowed.',
+            'cv_file.max' => 'CV file size must not exceed 1MB',
+            'job_title.required_without' => 'Please select a job position or add a new one',
+            'new_job_title.required_without' => 'Please enter a new job title',
+            'new_job_title.string' => 'Job title must be a text string',
+            'new_job_description.required_with' => 'Please enter the job description when adding a new job',
+            'new_job_description.string' => 'Job description must be a text string',
+            'new_job_description.max' => 'Job description must not exceed 5000 characters',
         ]);
 
         if ($validator->fails()) {
@@ -76,21 +94,88 @@ class CVAnalyzerController extends Controller
             $file = $request->file('cv_file');
             $filename = time() . '_' . $file->getClientOriginalName();
             
-            // Don't store file on Vercel - process directly
+            // Get or create job description
+            $jobTitle = '';
+            $jobDescription = null;
+            $jobDescriptionId = null;
+            
+            if ($request->filled('new_job_title')) {
+                // User entered new job title + description
+                $jobTitle = trim($request->new_job_title);
+                $newDescription = trim($request->new_job_description);
+                
+                // Check if job title already exists
+                $existingJob = \App\Models\JobDescription::where('job_title', $jobTitle)->first();
+                
+                if ($existingJob) {
+                    // Job already exists, use it
+                    $jobDescription = $existingJob;
+                    $jobDescriptionId = $existingJob->id;
+                } else {
+                    // Create new job description
+                    try {
+                        $jobDescription = \App\Models\JobDescription::create([
+                            'job_title' => $jobTitle,
+                            'department' => 'General',
+                            'description' => $newDescription,
+                            'requirements' => $request->job_requirements ?? '',
+                            'status' => 'active',
+                            'created_by' => Auth::id(),
+                        ]);
+                        $jobDescriptionId = $jobDescription->id;
+                    } catch (\Exception $e) {
+                        // If unique constraint error, fetch existing
+                        $jobDescription = \App\Models\JobDescription::where('job_title', $jobTitle)->first();
+                        $jobDescriptionId = $jobDescription->id;
+                    }
+                }
+            } else {
+                // User selected existing job from dropdown
+                $jobTitle = trim($request->job_title);
+                $jobDescription = \App\Models\JobDescription::where('job_title', $jobTitle)->first();
+                
+                if ($jobDescription) {
+                    $jobDescriptionId = $jobDescription->id;
+                }
+            }
+            
+            // Store CV file to storage
+            $cvFilePath = $file->storeAs('cvs', $filename, 'public');
+            
             Log::info('Starting CV analysis', [
                 'filename' => $filename,
+                'cv_file_path' => $cvFilePath,
                 'user_id' => Auth::id(),
-                'file_size' => $file->getSize()
+                'file_size' => $file->getSize(),
+                'job_title' => $jobTitle
             ]);
 
-            // Process PDF without storing
+            // Process PDF
             $pdfBase64 = $this->pdfService->convertToBase64($file);
-            $jobRequirements = $request->input('job_requirements');
+            
+            // Build job requirements context
+            $jobRequirementsContext = "";
+            
+            // Add additional requirements as disclaimer/priority at top if provided
+            if ($request->job_requirements) {
+                $jobRequirementsContext .= "⚠️ ADDITIONAL REQUIREMENTS (High Priority):\n{$request->job_requirements}\n\n";
+                $jobRequirementsContext .= "---\n\n";
+            }
+            
+            $jobRequirementsContext .= "Job Title: {$jobTitle}\n\n";
+            
+            if ($jobDescription && $jobDescription->description) {
+                $jobRequirementsContext .= "Job Description:\n{$jobDescription->description}\n\n";
+            }
+            
+            if ($jobDescription && $jobDescription->requirements) {
+                $jobRequirementsContext .= "Standard Requirements:\n{$jobDescription->requirements}\n\n";
+            }
 
             Log::info('PDF converted to base64, calling AI service');
 
             // Analyze with AI
-            $analysis = $this->aiService->analyzeCV($pdfBase64, $jobRequirements);
+            $analysis = $this->aiService->analyzeCV($pdfBase64, $jobRequirementsContext);
 
             Log::info('AI analysis completed successfully');
 
@@ -118,11 +203,11 @@ class CVAnalyzerController extends Controller
                 $recommendations = [$recommendations];
             }
 
-            // Save to database (without file path since we don't store files on Vercel)
+            // Save to database with CV file path
             $cvAnalysis = CvAnalysis::create([
                 'user_id' => Auth::id(),
                 'cv_filename' => $filename,
-                'cv_file_path' => null, // Don't store file on Vercel
+                'cv_file_path' => $cvFilePath,
                 'extracted_text' => is_array($analysis['extracted_text'] ?? null)
                     ? json_encode($analysis['extracted_text'])
                     : ($analysis['extracted_text'] ?? null),
@@ -136,6 +221,19 @@ class CVAnalyzerController extends Controller
                 'cv_analysis_id' => $cvAnalysis->id,
                 'user_id' => Auth::id()
             ]);
+
+            // Create job match record if we have a job description
+            if ($jobDescriptionId) {
+                \App\Models\CvJobMatch::create([
+                    'cv_analysis_id' => $cvAnalysis->id,
+                    'job_description_id' => $jobDescriptionId,
+                    'match_score' => $parsedData['match_percentage'] ?? 0,
+                    'matching_skills' => $parsedData['strengths'] ?? [],
+                    'missing_skills' => $parsedData['missing_skills'] ?? [],
+                    'match_analysis' => $summary,
+                    'recommendations' => json_encode($recommendations),
+                ]);
+            }
 
             return view('cv-results', [
                 'analysis' => array_merge($parsedData, [

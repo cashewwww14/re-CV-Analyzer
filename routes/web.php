@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CVAnalyzerController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\UserProfileController;
 
 // Root redirect
 Route::get('/', function () {
@@ -33,6 +34,13 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     // 🔹 Tambahan route baru untuk halaman history
     Route::get('/cv/history', [CVAnalyzerController::class, 'history'])->name('cv.history');
     Route::get('/cv-detail/{id}', [CVAnalyzerController::class, 'showDetail'])->name('cv.detail');
+
+    // User Profile Routes
+    Route::get('/profile', [UserProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [UserProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [UserProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/password', [UserProfileController::class, 'editPassword'])->name('profile.edit-password');
+    Route::put('/profile/password', [UserProfileController::class, 'updatePassword'])->name('profile.update-password');
 });
 
 
@@ -55,4 +63,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     Route::get('/monitoring', [AdminController::class, 'monitoring'])->name('admin.monitoring');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('admin.analytics');
+    
+    // View CV Analysis Detail (untuk admin lihat hasil analysis user)
+    Route::get('/cv-detail/{id}', [AdminController::class, 'viewCvDetail'])->name('admin.cv.detail');
+    
+    // Admin CV Analysis Preview (halaman preview terpisah untuk print)
+    Route::get('/cv-analysis-preview/{id}', [AdminController::class, 'previewAnalysis'])->name('admin.cv.preview');
 });

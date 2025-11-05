@@ -45,6 +45,12 @@
                         </svg>
                         <span>Analysis History</span>
                     </a>
+                    <a href="{{ route('profile.show') }}" class="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 px-4 py-3 rounded-lg font-semibold transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span>My Profile</span>
+                    </a>
                 </nav>
             </div>
         </aside>
@@ -98,7 +104,7 @@
                                         </label>
                                         <p class="pl-1">or drag and drop</p>
                                     </div>
-                                    <p class="text-xs text-gray-500">PDF up to 10MB</p>
+                                    <p class="text-xs text-gray-500">PDF up to 1MB</p>
                                 </div>
                             </div>
 
@@ -123,34 +129,79 @@
                         <div id="fileError" class="hidden mt-2 text-sm text-red-600"></div>
                     </div>
 
-                    <!-- Job Requirements -->
+                    <!-- Job Title Selection -->
+                    <div class="mb-6">
+                        <label for="job_title_select" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Select Job Position <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="job_title_select"
+                            name="job_title"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            required
+                        >
+                            <option value="">-- Select a Job Position --</option>
+                            @foreach($jobTitles as $job)
+                                <option value="{{ $job->job_title }}">
+                                    {{ $job->job_title }} - {{ $job->department }}
+                                </option>
+                            @endforeach
+                            <option value="__ADD_NEW__" class="font-semibold text-blue-600">+ Add New Job Title</option>
+                        </select>
+                    </div>
+
+                    <!-- New Job Title Input (Hidden by default) -->
+                    <div id="newJobTitleSection" class="mb-6 hidden">
+                        <label for="new_job_title" class="block text-sm font-semibold text-gray-700 mb-2">
+                            New Job Title <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="new_job_title"
+                            name="new_job_title"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="e.g., Senior Data Scientist, Marketing Manager, etc."
+                            maxlength="255"
+                            disabled
+                        >
+                        <p class="mt-1 text-xs text-gray-500">Enter the job title you want to analyze your CV against</p>
+
+                        <!-- New Job Description -->
+                        <label for="new_job_description" class="block text-sm font-semibold text-gray-700 mb-2 mt-4">
+                            Job Description / Specifications <span class="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="new_job_description"
+                            name="new_job_description"
+                            rows="8"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Enter the detailed job description, requirements, qualifications, and responsibilities..."
+                            maxlength="5000"
+                            disabled
+                        ></textarea>
+                        <p class="mt-1 text-xs text-gray-500">Describe the job requirements, skills needed, responsibilities, qualifications, etc.</p>
+                    </div>
+
+                    <!-- Job Requirements (Optional) -->
                     <div class="mb-6">
                         <label for="job_requirements" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Job Requirements
+                            Additional Job Requirements <span class="text-gray-400 text-xs">(Optional)</span>
                         </label>
                         <textarea
                             id="job_requirements"
                             name="job_requirements"
-                            rows="8"
+                            rows="6"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            placeholder="Paste the complete job description or requirements here. Include required skills, experience level, education requirements, and any specific qualifications..."
-                            required
-                            minlength="50"
-                            maxlength="5000"
+                            placeholder="Add specific requirements, skills, or qualifications for more accurate analysis (optional)..."
+                            maxlength="3000"
                         >{{ old('job_requirements') }}</textarea>
                         
-                        <!-- Character Counter -->
-                        <div class="mt-2 flex justify-between items-center">
-                            <p class="text-sm text-gray-500">
-                                Min 50 characters, max 5000 characters
-                            </p>
-                            <div id="charCounter" class="text-sm">
-                                <span id="charCount">0</span>/5000 characters
-                                <span id="charWarning" class="hidden text-red-600 ml-2">
-                                    (Need <span id="charsNeeded">50</span> more characters)
-                                </span>
-                            </div>
-                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            <svg class="inline w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            This field is optional. AI will use this as additional context for analysis.
+                        </p>
                     </div>
 
                     <!-- Submit Button -->
@@ -217,45 +268,47 @@
         const fileNameSuccess = document.getElementById('fileNameSuccess');
         const changeFileBtn = document.getElementById('changeFileBtn');
         const fileError = document.getElementById('fileError');
+        const jobTitleSelect = document.getElementById('job_title_select');
+        const newJobTitleSection = document.getElementById('newJobTitleSection');
+        const newJobTitleInput = document.getElementById('new_job_title');
+        const newJobDescriptionInput = document.getElementById('new_job_description');
         const jobRequirements = document.getElementById('job_requirements');
-        const charCount = document.getElementById('charCount');
-        const charWarning = document.getElementById('charWarning');
-        const charsNeeded = document.getElementById('charsNeeded');
         const analyzeBtn = document.getElementById('analyzeBtn');
         const cvForm = document.getElementById('cvForm');
 
-        // Minimum and maximum character limits
-        const MIN_CHARS = 50;
-        const MAX_CHARS = 5000;
-
-        // Update character counter
-        function updateCharCounter() {
-            const length = jobRequirements.value.length;
-            charCount.textContent = length;
-
-            // Check if minimum requirement is met
-            const meetsMinRequirement = length >= MIN_CHARS;
-            const meetsMaxRequirement = length <= MAX_CHARS;
-
-            // Update warning message
-            if (length < MIN_CHARS) {
-                charsNeeded.textContent = MIN_CHARS - length;
-                charWarning.classList.remove('hidden');
+        // Handle job title dropdown change
+        jobTitleSelect.addEventListener('change', function() {
+            if (this.value === '__ADD_NEW__') {
+                // Show new job title input
+                newJobTitleSection.classList.remove('hidden');
+                newJobTitleInput.setAttribute('required', 'required');
+                newJobTitleInput.removeAttribute('disabled');
+                newJobDescriptionInput.setAttribute('required', 'required');
+                newJobDescriptionInput.removeAttribute('disabled');
+                // Clear dropdown selection to avoid sending it
+                this.value = '';
             } else {
-                charWarning.classList.add('hidden');
+                // Hide new job title input and DISABLE them so they won't be sent
+                newJobTitleSection.classList.add('hidden');
+                newJobTitleInput.removeAttribute('required');
+                newJobTitleInput.setAttribute('disabled', 'disabled');
+                newJobTitleInput.value = '';
+                newJobDescriptionInput.removeAttribute('required');
+                newJobDescriptionInput.setAttribute('disabled', 'disabled');
+                newJobDescriptionInput.value = '';
             }
-
-            // Update submit button state
             updateSubmitButton();
-        }
+        });
 
         // Update submit button state
         function updateSubmitButton() {
             const hasFile = cvFileInput.files.length > 0;
-            const meetsCharRequirement = jobRequirements.value.length >= MIN_CHARS;
-            const withinCharLimit = jobRequirements.value.length <= MAX_CHARS;
-
-            analyzeBtn.disabled = !(hasFile && meetsCharRequirement && withinCharLimit);
+            const hasJobSelection = jobTitleSelect.value !== '' && jobTitleSelect.value !== '__ADD_NEW__';
+            const hasNewJobTitle = newJobTitleInput.value.trim() !== '';
+            const hasNewJobDescription = newJobDescriptionInput.value.trim() !== '';
+            
+            // Enable if: has file AND (has job selection OR (has new job title AND description))
+            analyzeBtn.disabled = !(hasFile && (hasJobSelection || (hasNewJobTitle && hasNewJobDescription)));
         }
 
         // Handle file upload
@@ -313,11 +366,9 @@
         // Change file button
         changeFileBtn.addEventListener('click', resetUploadState);
 
-        // Character counter
-        jobRequirements.addEventListener('input', updateCharCounter);
-
-        // Initialize character counter
-        updateCharCounter();
+        // New job title and description input change
+        newJobTitleInput.addEventListener('input', updateSubmitButton);
+        newJobDescriptionInput.addEventListener('input', updateSubmitButton);
 
         // Drag and drop functionality
         uploadDefault.addEventListener('dragover', function(e) {

@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - CV Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Scrollbar */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 8px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <!-- Navbar -->
@@ -73,7 +90,19 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-500 text-sm font-semibold">Total CVs Analyzed</p>
-                            <h3 class="text-3xl font-bold text-gray-800 mt-2">0</h3>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ $totalCVsAnalyzed }}</h3>
+                            <p class="text-xs text-gray-500 mt-1">
+                                @if($yesterdayAnalysis > 0)
+                                    @php
+                                        $change = (($todayAnalysis - $yesterdayAnalysis) / $yesterdayAnalysis) * 100;
+                                    @endphp
+                                    <span class="{{ $change >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        {{ $change >= 0 ? '↑' : '↓' }} {{ abs(round($change, 1)) }}% from yesterday
+                                    </span>
+                                @else
+                                    <span class="text-gray-400">{{ $todayAnalysis }} today</span>
+                                @endif
+                            </p>
                         </div>
                         <div class="bg-blue-100 p-3 rounded-full">
                             <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +116,8 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-500 text-sm font-semibold">Total Users</p>
-                            <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ \App\Models\User::where('role', 'user')->count() }}</h3>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ $totalUsers }}</h3>
+                            <p class="text-xs text-gray-500 mt-1">Registered users</p>
                         </div>
                         <div class="bg-green-100 p-3 rounded-full">
                             <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,7 +131,8 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-500 text-sm font-semibold">Active Job Descs</p>
-                            <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ \App\Models\JobDescription::where('status', 'active')->count() }}</h3>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ $activeJobDescs }}</h3>
+                            <p class="text-xs text-gray-500 mt-1">Available positions</p>
                         </div>
                         <div class="bg-yellow-100 p-3 rounded-full">
                             <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +146,8 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-500 text-sm font-semibold">Avg Match Score</p>
-                            <h3 class="text-3xl font-bold text-gray-800 mt-2">0%</h3>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ $avgMatchScore }}%</h3>
+                            <p class="text-xs text-gray-500 mt-1">Overall average</p>
                         </div>
                         <div class="bg-purple-100 p-3 rounded-full">
                             <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,17 +158,122 @@
                 </div>
             </div>
 
+            <!-- User Feedbacks Section -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">💬 User Feedbacks</h3>
+                @if($userFeedbacks->isEmpty())
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        <p>No user feedback yet</p>
+                    </div>
+                @else
+                    <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        @foreach($userFeedbacks as $feedback)
+                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                                <!-- User Info -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="bg-indigo-100 p-2 rounded-full">
+                                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-800">{{ $feedback->user->name }}</p>
+                                            <p class="text-xs text-gray-500">{{ $feedback->user->email }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-gray-500">{{ $feedback->updated_at->format('d M Y, H:i') }}</span>
+                                </div>
+
+                                <!-- Job Title -->
+                                @if($feedback->jobMatches->isNotEmpty() && $feedback->jobMatches->first()->jobDescription)
+                                <div class="mb-2">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        📋 {{ $feedback->jobMatches->first()->jobDescription->job_title }}
+                                    </span>
+                                </div>
+                                @endif
+
+                                <!-- Feedback Text -->
+                                <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ Str::limit($feedback->user_notes, 200) }}</p>
+                                    @if(strlen($feedback->user_notes) > 200)
+                                        <button onclick="alert('{{ addslashes($feedback->user_notes) }}')" class="text-blue-600 hover:text-blue-700 text-xs font-medium mt-1">
+                                            Read more...
+                                        </button>
+                                    @endif
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex flex-wrap gap-2">
+                                    @if($feedback->cv_file_path)
+                                    <a href="{{ \Storage::url($feedback->cv_file_path) }}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded-lg transition">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        View CV
+                                    </a>
+                                    @endif
+                                    <a href="{{ route('admin.cv.preview', $feedback->id) }}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium rounded-lg transition">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        View Analysis
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             <!-- Recent Activity -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h3>
-                <div class="text-center py-8 text-gray-500">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <p>No activity yet</p>
-                </div>
+                @if($recentActivities->isEmpty())
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>No activity yet</p>
+                    </div>
+                @else
+                    <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                        @foreach($recentActivities as $activity)
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-blue-100 p-2 rounded-full">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-800">
+                                            {{ $activity->user->name }} analyzed CV
+                                        </p>
+                                        <p class="text-xs text-gray-500">
+                                            @if($activity->jobMatches->isNotEmpty() && $activity->jobMatches->first()->jobDescription)
+                                                for {{ $activity->jobMatches->first()->jobDescription->job_title }}
+                                            @else
+                                                General analysis
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">{{ $activity->created_at->diffForHumans() }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </main>
     </div>
+
 </body>
 </html>
