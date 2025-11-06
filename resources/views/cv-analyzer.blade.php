@@ -138,7 +138,6 @@
                             id="job_title_select"
                             name="job_title"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            required
                         >
                             <option value="">-- Select a Job Position --</option>
                             @foreach($jobTitles as $job)
@@ -285,8 +284,7 @@
                 newJobTitleInput.removeAttribute('disabled');
                 newJobDescriptionInput.setAttribute('required', 'required');
                 newJobDescriptionInput.removeAttribute('disabled');
-                // Clear dropdown selection to avoid sending it
-                this.value = '';
+                // Keep dropdown at __ADD_NEW__ to pass validation
             } else {
                 // Hide new job title input and DISABLE them so they won't be sent
                 newJobTitleSection.classList.add('hidden');

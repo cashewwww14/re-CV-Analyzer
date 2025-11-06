@@ -99,7 +99,10 @@ class CVAnalyzerController extends Controller
             $jobDescription = null;
             $jobDescriptionId = null;
             
-            if ($request->filled('new_job_title')) {
+            // Check if user selected "Add New" option
+            $isAddingNew = $request->job_title === '__ADD_NEW__';
+            
+            if ($isAddingNew || $request->filled('new_job_title')) {
                 // User entered new job title + description
                 $jobTitle = trim($request->new_job_title);
                 $newDescription = trim($request->new_job_description);
